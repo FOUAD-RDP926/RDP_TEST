@@ -21,7 +21,7 @@ jobs:
           docker exec kali apt install -y \
             kali-desktop-xfce \
             tigervnc-standalone-server \
-            dbus-x11 wget socat
+            dbus-x11 wget curl
 
       - name: Configure VNC
         run: |
@@ -38,12 +38,7 @@ jobs:
 
       - name: Start VNC Server
         run: |
-          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost yes"
-
-      - name: Forward VNC to GitHub Runner via socat
-        run: |
-          # هذا يخلي 5901 على المضيف يشير للكونتينر
-          docker exec -d kali sh -c "socat TCP-LISTEN:5901,fork TCP:127.0.0.1:5901"
+          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no"
 
       - name: Install Tailscale
         run: |
