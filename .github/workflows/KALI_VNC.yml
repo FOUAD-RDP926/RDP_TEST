@@ -1,4 +1,4 @@
-name: Kali Linux VNC TCP (playit.gg)
+name: Kali Linux VNC TCP (Tailscale)
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
           docker exec kali apt install -y \
             kali-desktop-xfce \
             tigervnc-standalone-server \
-            dbus-x11 wget
+            dbus-x11 wget curl
 
       - name: Configure VNC
         run: |
@@ -40,17 +40,18 @@ jobs:
         run: |
           docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no"
 
-      - name: Install playit agent
+      - name: Install Tailscale
         run: |
-          wget https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
-          chmod +x playit-linux-amd64
+          curl -fsSL https://tailscale.com/install.sh | sh
 
-      - name: Start playit.gg TCP tunnel
+      - name: Connect to Tailscale
         env:
-          PLAYIT_AUTH_KEY: ${{ secrets.PLAYIT_AUTH_KEY }}
+          TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
-          ./playit-linux-amd64 auth set $PLAYIT_AUTH_KEY
-          ./playit-linux-amd64 &
+          sudo tailscale up --authkey=$TAILSCALE_AUTHKEY --hostname=kali-gha --accept-dns=false
+
+      - name: Show Tailscale IP
+        run: tailscale ip -4
 
       - name: Keep job alive (4 hours)
         run: sleep 14400
