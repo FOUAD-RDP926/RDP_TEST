@@ -37,9 +37,9 @@ jobs:
           "
 
       - name: Start VNC Server
-        run: |
-          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no"
-
+  run: |
+    docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no -interface 0.0.0.0"
+    
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
