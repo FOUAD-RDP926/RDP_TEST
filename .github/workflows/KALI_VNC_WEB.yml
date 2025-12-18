@@ -1,0 +1,59 @@
+name: Kali Linux VNC Web
+
+on:
+  workflow_dispatch:
+
+jobs:
+  kali-vnc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240  # مدة التشغيل 4 ساعات
+
+    steps:
+      - name: Start Kali Container
+        run: |
+          docker run -d --name kali \
+            -p 5901:5901 -p 6080:6080 \
+            kalilinux/kali-rolling sleep infinity
+
+      - name: Install Desktop + VNC + noVNC
+        run: |
+          docker exec kali apt update
+          docker exec kali apt install -y \
+            kali-desktop-xfce \
+            tigervnc-standalone-server \
+            novnc websockify dbus-x11 sudo wget unzip
+
+      - name: Configure VNC
+        run: |
+          docker exec kali bash -c "
+          mkdir -p /root/.vnc
+          echo '123456' | vncpasswd -f > /root/.vnc/passwd
+          chmod 600 /root/.vnc/passwd
+          echo '#!/bin/sh
+          unset SESSION_MANAGER
+          unset DBUS_SESSION_BUS_ADDRESS
+          exec startxfce4 &' > /root/.vnc/xstartup
+          chmod +x /root/.vnc/xstartup
+          "
+
+      - name: Start VNC + noVNC
+        run: |
+          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -fg -localhost no"
+          docker exec -d kali sh -c "websockify --web=/usr/share/novnc/ 6080 0.0.0.0:5901"
+
+      - name: Install Ngrok v3
+        run: |
+          wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+          tar -xvzf ngrok-v3-stable-linux-amd64.tgz
+          chmod +x ngrok
+
+      - name: Configure Ngrok Authtoken
+        env:
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+        run: ./ngrok config add-authtoken $NGROK_AUTHTOKEN
+
+      - name: Expose noVNC via Ngrok
+        run: |
+          ./ngrok http 6080 --region=eu &
+          sleep 10
+          curl -s http://127.0.0.1:4040/api/tunnels
