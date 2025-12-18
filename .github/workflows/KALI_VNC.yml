@@ -1,4 +1,4 @@
-name: Kali Linux VNC TCP via Tailscale
+name: Kali Linux VNC via Tailscale
 
 on:
   workflow_dispatch:
@@ -11,9 +11,7 @@ jobs:
     steps:
       - name: Start Kali Container
         run: |
-          docker run -d --name kali \
-            -p 5901:5901 \
-            kalilinux/kali-rolling sleep infinity
+          docker run -d --name kali --network host kalilinux/kali-rolling sleep infinity
 
       - name: Install Desktop + VNC
         run: |
