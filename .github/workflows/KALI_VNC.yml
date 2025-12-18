@@ -1,4 +1,4 @@
-name: Kali Linux VNC TCP (Tailscale)
+name: Kali Linux VNC TCP via Tailscale
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
 jobs:
   kali-vnc:
     runs-on: ubuntu-latest
-    timeout-minutes: 240   # 4 ساعات
+    timeout-minutes: 240  # 4 ساعات
 
     steps:
       - name: Start Kali Container
@@ -21,7 +21,7 @@ jobs:
           docker exec kali apt install -y \
             kali-desktop-xfce \
             tigervnc-standalone-server \
-            dbus-x11 wget curl
+            dbus-x11 wget socat
 
       - name: Configure VNC
         run: |
@@ -38,7 +38,12 @@ jobs:
 
       - name: Start VNC Server
         run: |
-          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no"
+          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost yes"
+
+      - name: Forward VNC to GitHub Runner via socat
+        run: |
+          # هذا يخلي 5901 على المضيف يشير للكونتينر
+          docker exec -d kali sh -c "socat TCP-LISTEN:5901,fork TCP:127.0.0.1:5901"
 
       - name: Install Tailscale
         run: |
@@ -53,5 +58,5 @@ jobs:
       - name: Show Tailscale IP
         run: tailscale ip -4
 
-      - name: Keep job alive (4 hours)
+      - name: Keep job alive
         run: sleep 14400
