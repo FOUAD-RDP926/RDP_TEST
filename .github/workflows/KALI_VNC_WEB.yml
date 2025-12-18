@@ -6,7 +6,7 @@ on:
 jobs:
   kali-vnc:
     runs-on: ubuntu-latest
-    timeout-minutes: 240  # مدة التشغيل 4 ساعات
+    timeout-minutes: 240   # 4 ساعات
 
     steps:
       - name: Start Kali Container
@@ -38,7 +38,7 @@ jobs:
 
       - name: Start VNC + noVNC
         run: |
-          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -fg -localhost no"
+          docker exec -d kali sh -c "vncserver :1 -geometry 1280x720 -localhost no"
           docker exec -d kali sh -c "websockify --web=/usr/share/novnc/ 6080 0.0.0.0:5901"
 
       - name: Install Ngrok v3
@@ -52,8 +52,13 @@ jobs:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
         run: ./ngrok config add-authtoken $NGROK_AUTHTOKEN
 
-      - name: Expose noVNC via Ngrok
+      - name: Start Ngrok HTTP (noVNC)
         run: |
-          ./ngrok http 6080 --region=eu &
+          ./ngrok http 6080 --region=eu > ngrok.log &
           sleep 10
-          curl -s http://127.0.0.1:4040/api/tunnels
+          echo "========= noVNC LINK ========="
+          curl -s http://127.0.0.1:4040/api/tunnels | jq
+          echo "=============================="
+
+      - name: Keep job alive (4 hours)
+        run: sleep 14400
